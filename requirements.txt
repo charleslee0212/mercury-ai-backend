@@ -5,6 +5,7 @@ certifi==2024.7.4
 cffi==1.16.0
 charset-normalizer==3.3.2
 click==8.1.7
+colorama==0.4.6
 coloredlogs==15.0.1
 ctranslate2==4.3.1
 dnspython==2.6.1
@@ -38,6 +39,7 @@ pycparser==2.22
 pydantic==2.8.2
 pydantic_core==2.20.1
 Pygments==2.18.0
+pyreadline3==3.4.1
 python-dotenv==1.0.1
 python-multipart==0.0.9
 PyYAML==6.0.1
@@ -55,6 +57,5 @@ typer==0.12.3
 typing_extensions==4.12.2
 urllib3==2.2.2
 uvicorn==0.30.4
-uvloop==0.19.0
 watchfiles==0.22.0
 websockets==12.0

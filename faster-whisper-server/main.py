@@ -1,5 +1,7 @@
 from fastapi import FastAPI, WebSocket, HTTPException, UploadFile, File
 from faster_whisper import WhisperModel
+from faster_whisper.vad import VadOptions, get_speech_timestamps
+from io import BytesIO
 import numpy as np
 import uvicorn
 
@@ -11,10 +13,10 @@ model_size = "large-v3"
 # model = WhisperModel(model_size, device='cuda', compute_type='float16')
 
 # or run on GPU with INT8
-# model = WhisperModel(model_size, device='cuda', compute_type='int8_float16')
-# or run on CPU with INT8
+model = WhisperModel(model_size, device='cuda', compute_type='int8_float16')
 
-model = WhisperModel(model_size, device="cpu", compute_type="int8")
+# or run on CPU with INT8
+# model = WhisperModel(model_size, device="cpu", compute_type="int8")
 
 SAMPLES_PER_SECOND = 48000
 
@@ -80,39 +82,72 @@ async def post_audio(file: UploadFile = File(...)):
 
     return {"partition": partition, "transcription": " ".join(transcription)}
 
+def get_chunk_size(duration, sample_rate):
+    # 32 bit depth
+    return int((duration * sample_rate) * (32//8))
 
-CHUNK_SIZE = 1280000  # Define your chunk size (in bytes)
+def is_speaking(data):
+    vad_options = VadOptions(min_silence_duration_ms=2000, speech_pad_ms=0)
+    timestamps = get_speech_timestamps(data, vad_options)
+    return len(timestamps) > 0
 
+
+CHUNK_SIZE = get_chunk_size(1, 16000)
+MAX_DURATION = get_chunk_size(10, 16000)
 
 @app.websocket("/live-transcription")
 async def transcribe(websocket: WebSocket):
     await websocket.accept()
 
     # Initialize variables for chunk-based processing
-    buffer = bytearray()
+    buffer = BytesIO()
 
-    try:
-        while True:
-            # Receive audio data in chunks
-            data = await websocket.receive_bytes()
-            buffer.extend(data)
+    # Keep track of processed chunks
+    processed = 0
 
-            print(len(buffer))
+    while True:
 
-            # Process complete chunks of audio data
-            while len(buffer) >= CHUNK_SIZE:
-                chunk = buffer[:CHUNK_SIZE]
-                buffer = buffer[CHUNK_SIZE:]
+        # Receive audio data in chunks
+        data = await websocket.receive_bytes()
 
-                # Convert the chunk to PCM if necessary
-                pcm_data = np.frombuffer(chunk, dtype=np.float32)
+        buffer.seek(0, 2)
+        buffer.write(data)
+        buffer.seek(0)
 
-                # Transcribe the audio chunk
-                segments, info = model.transcribe(pcm_data)
+        byte_data = buffer.getvalue()
+        byte_len = len(byte_data)
 
-                # Send transcription results
-                for segment in segments:
-                    response = {
+        # Process complete chunks of audio data
+        if byte_len // CHUNK_SIZE > processed:
+
+            # VAD
+            float_arry = np.frombuffer(byte_data[int(processed * CHUNK_SIZE):], dtype=np.float32)
+            speaking = is_speaking(float_arry)
+            if not speaking:
+                processed += 1
+                continue
+
+            # Convert the chunk to PCM if necessary
+            pcm_data = np.frombuffer(byte_data, dtype=np.float32)
+
+            # Transcribe the audio chunk
+            segments, info = model.transcribe(pcm_data)
+
+            # Reset buffer at MAX_DURATION
+            finilize = False
+            if byte_len > MAX_DURATION:
+                buffer.seek(0)
+                buffer.truncate(0)
+                processed = 0
+                finilize = True
+
+            # Send transcription results
+            partition = []
+            transcription = []
+
+            for segment in segments:
+                partition.append(
+                    {
                         "start": segment.start,
                         "end": segment.end,
                         "text": segment.text.lstrip(),
@@ -121,15 +156,11 @@ async def transcribe(websocket: WebSocket):
                             "probability": info.language_probability,
                         },
                     }
-                    await websocket.send_json(response)
+                )
+                transcription.append(segment.text.lstrip())
 
-    except Exception as e:
-        await websocket.close(code=4000)  # Close the connection on error
-        print(f"Error: {e}")
-
-    finally:
-        await websocket.close()
-
+            await websocket.send_json({"partition": partition, "transcription": " ".join(transcription), "type": "final" if finilize else "partial"})
+            processed += 1
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
