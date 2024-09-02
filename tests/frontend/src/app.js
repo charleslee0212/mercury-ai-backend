@@ -1,16 +1,47 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const websocket = new WebSocket('ws://127.0.0.1:8000/live-transcription');
-websocket.onmessage = (event) => {
-  console.log('Transcription:', event.data);
-};
+const websocket = new WebSocket('wss://10.0.0.126:8000/live-transcription');
 websocket.onerror = (error) => {
   console.log('WebSocket Error:', error);
 };
 
 const App = () => {
   const [recorder, setRecorder] = useState();
+  const [partial, setPartial] = useState('');
+  const [final, setFinal] = useState([]);
+  const [transcript, setTranscript] = useState('');
   const audioContext = useRef();
+
+  useEffect(() => {
+    websocket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const type = data.type;
+
+      console.log(data);
+
+      switch (type) {
+        case 'partial':
+          setPartial(data.transcription);
+          break;
+        case 'final':
+          setPartial('');
+          setFinal((prev) => {
+            const arr = [...prev];
+            arr.push(data.transcription);
+            return arr;
+          });
+          break;
+        default:
+          console.log('Unspecified Type!');
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const oldFinal = [...final];
+    oldFinal.push(partial);
+    setTranscript(oldFinal.join(' '));
+  }, [final, partial]);
 
   const onclickStart = async () => {
     try {
@@ -23,7 +54,7 @@ const App = () => {
 
       workletNode.port.onmessage = (event) => {
         if (event.data instanceof Float32Array) {
-          // Send PCM data to the WebSocket
+          // Send PCM data to the WebSockets
           websocket.send(event.data);
         }
       };
@@ -51,6 +82,7 @@ const App = () => {
     <div>
       <button onClick={onclickStart}>Start</button>
       <button onClick={onclickStop}>Stop</button>
+      <p>{transcript}</p>
     </div>
   );
 };
