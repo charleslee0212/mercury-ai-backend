@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 
-const websocket = new WebSocket('wss://10.0.0.126:8000/live-transcription');
+const websocket = new WebSocket(
+  "wss://mercury.work.gd:8000/live-transcription"
+);
 websocket.onerror = (error) => {
-  console.log('WebSocket Error:', error);
+  console.log("WebSocket Error:", error);
 };
 
 const App = () => {
   const [recorder, setRecorder] = useState();
-  const [partial, setPartial] = useState('');
+  const [partial, setPartial] = useState("");
   const [final, setFinal] = useState([]);
-  const [transcript, setTranscript] = useState('');
+  const [transcript, setTranscript] = useState("");
   const audioContext = useRef();
 
   useEffect(() => {
@@ -20,11 +22,11 @@ const App = () => {
       console.log(data);
 
       switch (type) {
-        case 'partial':
+        case "partial":
           setPartial(data.transcription);
           break;
-        case 'final':
-          setPartial('');
+        case "final":
+          setPartial("");
           setFinal((prev) => {
             const arr = [...prev];
             arr.push(data.transcription);
@@ -32,7 +34,7 @@ const App = () => {
           });
           break;
         default:
-          console.log('Unspecified Type!');
+          console.log("Unspecified Type!");
       }
     };
   }, []);
@@ -40,16 +42,16 @@ const App = () => {
   useEffect(() => {
     const oldFinal = [...final];
     oldFinal.push(partial);
-    setTranscript(oldFinal.join(' '));
+    setTranscript(oldFinal.join(" "));
   }, [final, partial]);
 
   const onclickStart = async () => {
     try {
       audioContext.current = new AudioContext({ sampleRate: 16000 });
-      await audioContext.current.audioWorklet.addModule('./processor.js');
+      await audioContext.current.audioWorklet.addModule("./processor.js");
       const workletNode = new AudioWorkletNode(
         audioContext.current,
-        'pcm-processor'
+        "pcm-processor"
       );
 
       workletNode.port.onmessage = (event) => {
@@ -63,16 +65,16 @@ const App = () => {
       sourceNode.connect(workletNode);
       workletNode.connect(audioContext.current.destination);
 
-      workletNode.port.postMessage({ type: 'start' });
+      workletNode.port.postMessage({ type: "start" });
       setRecorder(workletNode);
     } catch (error) {
-      console.error('Audio Worklet Error:', error);
+      console.error("Audio Worklet Error:", error);
     }
   };
 
   const onclickStop = () => {
     if (recorder) {
-      recorder.port.postMessage({ type: 'stop' });
+      recorder.port.postMessage({ type: "stop" });
       audioContext.current.close();
       setRecorder();
     }
