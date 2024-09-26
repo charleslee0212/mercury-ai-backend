@@ -3,8 +3,7 @@ import numpy as np
 from io import BytesIO
 from numpy.typing import NDArray
 from collections.abc import AsyncGenerator
-from vad import is_speaking
-from config import SAMPLE_RATE, CHUNK_DURATION
+from config import SAMPLE_RATE
 from fastapi import WebSocket, WebSocketDisconnect
 
 
@@ -43,14 +42,14 @@ class AudioStream(Audio):
         data: NDArray[np.float32] = np.array([], dtype=np.float32),
         start: float = 0.0,
     ) -> None:
-        super.__init__(data, start)
+        super().__init__(data=data, start=start)
 
         self.closed = False
         self.event = asyncio.Event()
 
     def extend(self, data: NDArray[np.float32]) -> None:
         assert not self.closed
-        super().extend(data)
+        super().extend(data=data)
         self.event.set()
 
     def close(self) -> None:
@@ -84,34 +83,11 @@ class AudioStream(Audio):
 
 
 async def stream_audio(websocket: WebSocket, audio_stream: AudioStream) -> None:
-    # Accumulate a chunk for VAD processing
-    buffer = BytesIO()
-    CHUNK_SIZE = int(CHUNK_DURATION * SAMPLE_RATE)
     try:
         while True:
-
             data = await websocket.receive_bytes()
-
-            buffer.seek(0, 2)
-            buffer.write(data)
-            buffer.seek(0)
-
-            byte_data = buffer.getvalue()
-            byte_len = len(byte_data)
-
-            if byte_len >= CHUNK_SIZE:
-
-                # VAD
-                float_arry = np.frombuffer(byte_data, dtype=np.float32)
-                speaking = is_speaking(float_arry)
-                buffer.seek(0)
-                buffer.truncate(0)
-                if not speaking:
-                    continue
-
-                chunk = np.frombuffer(byte_data, dtype=np.float32)
-
-                audio_stream.extend(chunk)
+            float_array = np.frombuffer(data, dtype=np.float32)
+            audio_stream.extend(float_array)
 
     except TimeoutError:
         print("Timeout! No data was detected!")
