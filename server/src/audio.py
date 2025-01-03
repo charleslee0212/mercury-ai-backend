@@ -1,10 +1,12 @@
 import asyncio
 import numpy as np
-from io import BytesIO
 from numpy.typing import NDArray
 from collections.abc import AsyncGenerator
 from config import SAMPLE_RATE
 from fastapi import WebSocket, WebSocketDisconnect
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Audio:
@@ -24,12 +26,22 @@ class Audio:
     def end(self) -> float:
         return self.start + self.duration
 
+    @property
+    def size(self) -> int:
+        return len(self.data)
+
     def after(self, ts: float) -> "Audio":
-        assert ts <= self.duration
-        return Audio(data=self.data[int(ts * SAMPLE_RATE) :], start=ts)
+        adjust = ts - self.start if ts > self.duration else ts
+        assert adjust <= self.duration
+        return Audio(data=self.data[int(adjust * SAMPLE_RATE) :], start=ts)
 
     def extend(self, data: NDArray[np.float32]) -> None:
         self.data = np.append(self.data, data)
+
+    def set(self, ts: float) -> None:
+        assert ts <= self.duration
+        self.data = np.array([self.data[int(ts * SAMPLE_RATE) :]], dtype=np.float32)
+        self.start = 0.0
 
     def reset(self) -> None:
         self.data = np.array([], dtype=np.float32)
@@ -90,6 +102,6 @@ async def stream_audio(websocket: WebSocket, audio_stream: AudioStream) -> None:
             audio_stream.extend(float_array)
 
     except TimeoutError:
-        print("Timeout! No data was detected!")
+        logger.info("Timeout! No data was detected!")
     except WebSocketDisconnect as e:
-        print(f"Client disconnected: {e}")
+        logger.info(f"Client disconnected: {e}")

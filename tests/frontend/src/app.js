@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 
 const websocket = new WebSocket(
-  //"wss://mercury.work.gd:8000/live-transcription"
-  "wss://localhost:8000/v2/live-transcription"
+  // "wss://mercury.work.gd:8000/v2/live-transcription"
+  "wss://api.mercury-ai.io/v2/live-transcription"
 );
 websocket.onerror = (error) => {
   console.log("WebSocket Error:", error);
@@ -17,27 +17,26 @@ const App = () => {
 
   useEffect(() => {
     websocket.onmessage = (event) => {
-      console.log(event.data);
-      // const data = JSON.parse(event.data);
-      // const type = data.type;
+      const data = JSON.parse(event.data);
+      const type = data.type;
 
-      // console.log(data);
+      console.log(data);
 
-      // switch (type) {
-      //   case "partial":
-      //     setPartial(data.transcription);
-      //     break;
-      //   case "final":
-      //     setPartial("");
-      //     setFinal((prev) => {
-      //       const arr = [...prev];
-      //       arr.push(data.transcription);
-      //       return arr;
-      //     });
-      //     break;
-      //   default:
-      //     console.log("Unspecified Type!");
-      // }
+      switch (type) {
+        case "partial":
+          setPartial(data.text);
+          break;
+        case "final":
+          setPartial("");
+          setFinal((prev) => {
+            const arr = [...prev];
+            arr.push(data.text);
+            return arr;
+          });
+          break;
+        default:
+          console.log("Unspecified Type!");
+      }
     };
   }, []);
 

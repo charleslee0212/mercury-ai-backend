@@ -2,6 +2,10 @@ import asyncio
 from faster_whisper import transcribe
 from core import Transcription, Segment, Word
 from audio import Audio
+import logging
+import time
+
+logger = logging.getLogger(__name__)
 
 
 class MercuryASR:
@@ -11,10 +15,10 @@ class MercuryASR:
     def _transcribe(
         self, audio: Audio, prompt: str | None = None
     ) -> tuple[Transcription, transcribe.TranscriptionInfo]:
+        start = time.perf_counter()
         segments, transcription_info = self.whisper.transcribe(
             audio.data,
             initial_prompt=prompt,
-            condition_on_previous_text=False,
             word_timestamps=True,
         )
         segments = Segment.translate(segments=segments)
@@ -24,6 +28,11 @@ class MercuryASR:
             word.offset(audio.start)
 
         transcription = Transcription(words=words)
+
+        end = time.perf_counter()
+        logger.info(
+            f"Transcribed {audio} in {end - start:.2f} seconds. Prompt: {prompt}. Transcription: {transcription.text}"
+        )
 
         return (transcription, transcription_info)
 

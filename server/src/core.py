@@ -74,6 +74,7 @@ class Segment(BaseModel):
 class Transcription:
     def __init__(self, words: list[Word] = []) -> None:
         self.words: list[Word] = []
+        self.type: str = "none"
         self.extend(words)
 
     @property
@@ -97,9 +98,24 @@ class Transcription:
             words=[word for word in self.words if word.start > seconds]
         )
 
+    def before(self, seconds: float) -> "Transcription":
+        return Transcription(words=[word for word in self.words if word.end <= seconds])
+
+    def replace(self, words: list[Word]) -> None:
+        self.words = words
+
     def extend(self, words: list[Word]) -> None:
         self._ensure_no_word_overlap(words)
         self.words.extend(words)
+
+    def merge(self, words: list[Word]) -> None:
+        if len(words):
+            overlap_start = words[0].start
+            print(f"Merge Start: {overlap_start}")
+            print(f"Self: {self.words}")
+            print(f"Incoming: {words}")
+            self.replace(words=self.before(overlap_start).words)
+            self.extend(words=words)
 
     def _ensure_no_word_overlap(self, words: list[Word]) -> None:
         if len(self.words) > 0 and len(words) > 0:
@@ -112,6 +128,16 @@ class Transcription:
                 raise ValueError(
                     f"Words overlap: {words[i - 1]} and {words[i]}. All words: {words}"
                 )
+
+    def reset(self) -> None:
+        self.replace(words=[])
+        self.type = "none"
+
+    def set_partial(self):
+        self.type = "partial"
+
+    def set_final(self):
+        self.type = "final"
 
 
 def is_eos(text: str) -> bool:
