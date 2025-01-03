@@ -1,3 +1,5 @@
 venv
 .DS_Store
 SSL
+*.pyc
+__pycache__/
