@@ -31,6 +31,8 @@ export const handler = async (event) => {
 
   const secret = secretResp.SecretString;
 
+  console.log(secret);
+
   const openai_client = new OpenAI({
     apiKey: secret,
   });
