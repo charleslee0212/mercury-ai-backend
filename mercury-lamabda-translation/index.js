@@ -31,10 +31,8 @@ export const handler = async (event) => {
 
   const secret = secretResp.SecretString;
 
-  console.log(secret);
-
   const openai_client = new OpenAI({
-    apiKey: secret,
+    apiKey: secret.openai_api_token,
   });
 
   const completion = await openai_client.chat.completions.create({
