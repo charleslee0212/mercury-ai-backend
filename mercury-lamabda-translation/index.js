@@ -29,7 +29,7 @@ export const handler = async (event) => {
     throw error;
   }
 
-  const secret = secretResp.SecretString;
+  const secret = JSON.parse(secretResp.SecretString);
 
   const openai_client = new OpenAI({
     apiKey: secret.openai_api_token,
