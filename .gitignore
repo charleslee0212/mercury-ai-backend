@@ -1,0 +1,6 @@
+venv
+.DS_Store
+SSL
+*.pyc
+__pycache__/
+node_modules
