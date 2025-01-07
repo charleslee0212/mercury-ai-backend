@@ -18,3 +18,11 @@ class MercuryTranscriptionJSON(BaseModel):
             duration=transcription.duration,
             type=transcription.type,
         )
+class MercuryTranslationRequestJSON(BaseModel):
+    model: str
+    transcription: str
+    languages: list[str]
+
+class MercuryTranslationJSON(BaseModel):
+    status: int
+    completion: str

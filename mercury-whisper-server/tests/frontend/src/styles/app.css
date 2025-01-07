@@ -1,0 +1,34 @@
+.mercury-container {
+  display: flex;
+  position: absolute;
+  right: 0px;
+  left: 0px;
+  top: 0px;
+  bottom: 0px;
+  flex-direction: column;
+  padding: 5px;
+}
+
+.mercury-header {
+  padding: 10px 0px 10px 0px;
+}
+
+.mic-button {
+  padding: 0px 10px 0px 10px;
+}
+
+.mercury-transcription {
+  border: solid 2px lightgray;
+  border-radius: 5px;
+  padding: 10px 10px 10px 0px;
+  display: flex;
+  height: 100%;
+}
+
+.mercury-translation {
+  border: solid 2px lightgray;
+  border-radius: 5px;
+  padding: 10px;
+  overflow-y: auto;
+  height: 100%;
+}

@@ -36,12 +36,5 @@ module.exports = {
   ],
   devServer: {
     port: 9000,
-    server: {
-      type: 'https',
-      options: {
-        key: '../../SSL/key.pem',
-        cert: '../../SSL/cert.pem',
-      },
-    },
   },
 };

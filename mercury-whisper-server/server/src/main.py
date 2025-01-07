@@ -2,13 +2,19 @@ from fastapi import (
     FastAPI,
     WebSocket,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.websockets import WebSocketState
 from faster_whisper import WhisperModel
 from mercury_asr import MercuryASR
 from audio import AudioStream, stream_audio
 from transcriber import mercury_transcribe, mercury_transcribe_v2
+from translator import mercury_translator
 from logger_setup import set_up_logger
-from mercury_json import MercuryTranscriptionJSON
+from mercury_json import (
+    MercuryTranscriptionJSON,
+    MercuryTranslationJSON,
+    MercuryTranslationRequestJSON,
+)
 import logging
 import asyncio
 from hypercorn.asyncio import serve
@@ -17,6 +23,19 @@ from hypercorn.config import Config
 app = FastAPI()
 set_up_logger()
 logger = logging.getLogger(__name__)
+
+# DEVELOPMENT ALLOW CORS ORIGIN
+origins = [
+    "http://localhost:9000",  # Your React frontend
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
 
 model_size = "large-v3"
 
@@ -32,7 +51,13 @@ model = WhisperModel(model_size, device="cuda", compute_type="float16")
 
 @app.get("/")
 def read_root():
-    return {"hello": "world"}
+    return {"message": "Welcome to mercury-ai.io api."}
+
+
+@app.post("/translation")
+def translate(request: MercuryTranslationRequestJSON):
+    translation_resp = mercury_translator(request=request)
+    return MercuryTranslationJSON(**translation_resp)
 
 
 @app.websocket("/v1/live-transcription")
