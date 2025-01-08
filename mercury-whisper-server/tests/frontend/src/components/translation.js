@@ -24,13 +24,13 @@ const Translation = ({ model, languages, partial, final }) => {
   useEffect(() => {
     (async () => {
       if (final.length) {
+        setPartialTranslation({});
         const { completion } = await mercuryTranslation({
           model: model,
           transcription: final[final.length - 1],
           languages: languages,
         });
         const { translations } = JSON.parse(completion);
-        setPartialTranslation({});
         setFinalTranslation((prev) => {
           const arr = [...prev];
           arr.push(translations);
@@ -43,7 +43,7 @@ const Translation = ({ model, languages, partial, final }) => {
   return (
     <Grid2 container direction="row" spacing={2} className="translation">
       {languages.map((language, index) => (
-        <Grid2 key={index} size={6}>
+        <Grid2 key={index} size={{ xs: 12, md: 6 }} position="relative">
           <TranslationCard
             language={language}
             partial={partialTranslation[language]}

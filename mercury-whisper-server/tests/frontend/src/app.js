@@ -118,7 +118,7 @@ const App = () => {
         spacing={1}
         sx={{ alignItems: 'flex-start' }}
       >
-        <Grid2 size={2}>
+        <Grid2 size={{ xs: 4, md: 2 }}>
           <FormControl className="mercury-gpt-model" fullWidth>
             <InputLabel id="mercury-gpt-model">GPT Model</InputLabel>
             <Select
@@ -136,7 +136,7 @@ const App = () => {
             </Select>
           </FormControl>
         </Grid2>
-        <Grid2 size={4}>
+        <Grid2 size={{ xs: 8, md: 4 }}>
           <FormControl className="mercury-languages" fullWidth>
             <InputLabel id="mercury-languages">Languages</InputLabel>
             <Select
@@ -170,22 +170,27 @@ const App = () => {
         alignItems="flex-start"
         height="100%"
         overflow="hidden"
+        direction={{ xs: 'column', md: 'row' }}
+        wrap="nowrap"
       >
-        <Grid2 className="mercury-transcription" size={6}>
+        <Grid2 className="mercury-transcription" size={{ xs: 12, md: 6 }}>
           <div className="mic-button">
             {listening ? (
               <IconButton onClick={onclickStop}>
                 <MicOffIcon />
               </IconButton>
             ) : (
-              <IconButton onClick={onclickStart}>
+              <IconButton
+                disabled={!selectedLanguages.length}
+                onClick={onclickStart}
+              >
                 <MicIcon />
               </IconButton>
             )}
           </div>
           <Transcription partial={partial} final={final} />
         </Grid2>
-        <Grid2 className="mercury-translation" size={6}>
+        <Grid2 className="mercury-translation" size={{ xs: 12, md: 6 }}>
           <Translation
             model={gpt}
             languages={selectedLanguages}

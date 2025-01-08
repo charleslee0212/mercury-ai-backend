@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Box, Chip, Grid2 } from '@mui/material';
 import '../styles/transcription.css';
 
@@ -12,6 +12,10 @@ const chipStyle = {
 };
 
 const Transcription = ({ partial, final }) => {
+  const endOfCardRef = useRef();
+  useEffect(() => {
+    endOfCardRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [partial, final]);
   return (
     <Box className="transcription">
       <Grid2
@@ -42,6 +46,7 @@ const Transcription = ({ partial, final }) => {
           <></>
         )}
       </Grid2>
+      <div className="end-of-card" ref={endOfCardRef}></div>
     </Box>
   );
 };

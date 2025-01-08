@@ -24,10 +24,8 @@ app = FastAPI()
 set_up_logger()
 logger = logging.getLogger(__name__)
 
-# DEVELOPMENT ALLOW CORS ORIGIN
-origins = [
-    "http://localhost:9000",  # Your React frontend
-]
+# DEVELOPMENT ALLOW CORS ORIGIN TO LOCAL
+origins = ["http://localhost:9000", "https://mercury-ai.io"]
 
 app.add_middleware(
     CORSMiddleware,

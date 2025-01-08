@@ -22,6 +22,7 @@
   border-radius: 5px;
   padding: 10px 10px 10px 0px;
   display: flex;
+  overflow-y: auto;
   height: 100%;
 }
 
