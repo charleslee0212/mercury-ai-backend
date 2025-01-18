@@ -3,47 +3,72 @@ import { Grid2 } from '@mui/material';
 import TranslationCard from './translationCard';
 import mercuryTranslation from '../util/mercuryTranslation';
 
-const Translation = ({ model, languages, partial, final }) => {
+const getTranslations = async ({ model, text, languages }) => {
+  const { completion } = await mercuryTranslation({
+    model: model,
+    transcription: text,
+    languages: languages,
+  });
+  const { translations } = JSON.parse(completion);
+  return translations;
+};
+
+const Translation = ({ model, languages, data }) => {
   const [partialTranslation, setPartialTranslation] = useState({});
   const [finalTranslation, setFinalTranslation] = useState([]);
 
   useEffect(() => {
-    (async () => {
-      if (partial) {
-        const { completion } = await mercuryTranslation({
-          model: model,
-          transcription: partial,
-          languages: languages,
-        });
-        const { translations } = JSON.parse(completion);
-        setPartialTranslation(translations);
-      }
-    })();
-  }, [partial]);
-
-  useEffect(() => {
-    (async () => {
-      if (final.length) {
-        setPartialTranslation({});
-        const { completion } = await mercuryTranslation({
-          model: model,
-          transcription: final[final.length - 1],
-          languages: languages,
-        });
-        const { translations } = JSON.parse(completion);
-        setFinalTranslation((prev) => {
-          const arr = [...prev];
-          arr.push(translations);
-          return arr;
-        });
-      }
-    })();
-  }, [final]);
+    console.log(data);
+    if (Object.keys(data).length) {
+      (async () => {
+        const type = data.type;
+        switch (type) {
+          case 'partial':
+            const partial_translations = await getTranslations({
+              model: model,
+              text: data.text,
+              languages: languages,
+            });
+            setPartialTranslation(partial_translations);
+            break;
+          case 'final':
+            const final_translations = await getTranslations({
+              model: model,
+              text: data.text,
+              languages: languages,
+            });
+            setPartialTranslation({});
+            setFinalTranslation((prev) => {
+              const arr = [...prev];
+              arr.push(final_translations);
+              return arr;
+            });
+            break;
+          default:
+            console.log('Unspecified Type!');
+        }
+      })();
+    }
+  }, [data]);
 
   return (
-    <Grid2 container direction="row" spacing={2} className="translation">
+    <Grid2
+      container
+      className="mercury-translation"
+      direction="row"
+      spacing={2}
+      height="100%"
+      size={{ xs: 12, md: 6 }}
+    >
       {languages.map((language, index) => (
-        <Grid2 key={index} size={{ xs: 12, md: 6 }} position="relative">
+        <Grid2
+          container
+          direction="column"
+          key={index}
+          size={{ xs: 12, md: 6 }}
+          position="relative"
+          height="100%"
+        >
           <TranslationCard
             language={language}
             partial={partialTranslation[language]}

@@ -26,7 +26,10 @@ const TranslationCard = ({ language, partial, final }) => {
           spacing={1}
           direction="column"
           sx={{
+            flex: 1,
+            flexWrap: 'nowrap',
             alignItems: 'flex-end',
+            overflowY: 'auto',
           }}
         >
           {final.map((transcript, index) => (
@@ -48,8 +51,8 @@ const TranslationCard = ({ language, partial, final }) => {
           ) : (
             <></>
           )}
+          <div className="end-of-card" ref={endOfCardRef}></div>
         </Grid2>
-        <div className="end-of-card" ref={endOfCardRef}></div>
       </Box>
     </>
   );

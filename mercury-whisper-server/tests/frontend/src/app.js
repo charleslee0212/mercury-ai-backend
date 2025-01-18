@@ -26,6 +26,7 @@ websocket.onerror = (error) => {
 };
 
 const App = () => {
+  const [data, setData] = useState({});
   const [recorder, setRecorder] = useState();
   const [partial, setPartial] = useState('');
   const [final, setFinal] = useState([]);
@@ -35,11 +36,12 @@ const App = () => {
   const audioContext = useRef();
 
   useEffect(() => {
+    // websocket connection
     websocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       const type = data.type;
 
-      console.log(data);
+      setData(data);
 
       switch (type) {
         case 'partial':
@@ -190,14 +192,7 @@ const App = () => {
           </div>
           <Transcription partial={partial} final={final} />
         </Grid2>
-        <Grid2 className="mercury-translation" size={{ xs: 12, md: 6 }}>
-          <Translation
-            model={gpt}
-            languages={selectedLanguages}
-            partial={partial}
-            final={final}
-          />
-        </Grid2>
+        <Translation model={gpt} languages={selectedLanguages} data={data} />
       </Grid2>
       <div className="footer"></div>
     </div>

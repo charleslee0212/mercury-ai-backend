@@ -1,10 +1,12 @@
 .translation-card {
+  display: flex;
   position: relative;
-  height: 300px;
+  flex: 1;
   border: solid 2px lightgray;
   border-radius: 5px;
   padding: 10px;
-  overflow-y: auto;
+  overflow-y: hidden;
+  flex-direction: column;
 }
 
 .translation-card-label {
