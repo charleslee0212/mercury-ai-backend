@@ -4,6 +4,7 @@ from numpy.typing import NDArray
 from collections.abc import AsyncGenerator
 from config import SAMPLE_RATE
 from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocketState
 import logging
 
 logger = logging.getLogger(__name__)
@@ -97,7 +98,15 @@ class AudioStream(Audio):
 async def stream_audio(websocket: WebSocket, audio_stream: AudioStream) -> None:
     try:
         while True:
-            data = await websocket.receive_bytes()
+            try:
+                data = await websocket.receive_bytes()
+            except RuntimeError as e:
+                if 'WebSocket is not connected. Need to call "accept" first.' in str(e):
+                    logger.error("WebSocket was disconnected! Exiting stream audio...")
+                    break
+                else:
+                    raise
+
             float_array = np.frombuffer(data, dtype=np.float32)
             audio_stream.extend(float_array)
 

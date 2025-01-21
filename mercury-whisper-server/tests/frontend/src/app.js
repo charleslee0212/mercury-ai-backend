@@ -16,14 +16,7 @@ import Translation from './components/translation';
 import gptModels from './options/gptModels';
 import { options, map } from './options/languages';
 import './styles/app.css';
-
-const websocket = new WebSocket(
-  // "wss://mercury.work.gd:8000/v2/live-transcription"
-  'wss://api.mercury-ai.io/v2/live-transcription'
-);
-websocket.onerror = (error) => {
-  console.log('WebSocket Error:', error);
-};
+import Swal from 'sweetalert2';
 
 const App = () => {
   const [data, setData] = useState({});
@@ -33,11 +26,21 @@ const App = () => {
   const [listening, setListening] = useState(false);
   const [gpt, setGpt] = useState(gptModels[0]);
   const [selectedLanguages, setLanguages] = useState([]);
+  const [loading, setLoading] = useState(false);
   const audioContext = useRef();
+  const websocket = useRef();
 
   useEffect(() => {
     // websocket connection
-    websocket.onmessage = (event) => {
+    setLoading(true);
+    websocket.current = new WebSocket(
+      // "wss://mercury.work.gd:8000/v2/live-transcription"
+      'wss://api.mercury-ai.io/v2/live-transcription'
+    );
+    websocket.current.onerror = (error) => {
+      console.log('WebSocket Error:', error);
+    };
+    websocket.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       const type = data.type;
 
@@ -59,10 +62,37 @@ const App = () => {
           console.log('Unspecified Type!');
       }
     };
-  }, []);
+    websocket.current.onclose = (event) => {
+      console.log(event);
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+          toast.onmouseenter = Swal.stopTimer;
+          toast.onmouseleave = Swal.resumeTimer;
+        },
+      });
+      Toast.fire({
+        icon: 'info',
+        title: 'Disconnected: Idle for too long!',
+      });
+      setListening(false);
+      if (recorder) {
+        recorder.port.postMessage({ type: 'stop' });
+        audioContext.current.close();
+        setRecorder();
+      }
+    };
+    websocket.current.onopen = (event) => {
+      console.log(event);
+      setLoading(false);
+    };
+  }, [listening]);
 
   const onclickStart = async () => {
-    setListening(true);
     try {
       audioContext.current = new AudioContext({ sampleRate: 16000 });
       await audioContext.current.audioWorklet.addModule('./processor.js');
@@ -74,9 +104,12 @@ const App = () => {
       workletNode.port.onmessage = (event) => {
         if (event.data instanceof Float32Array) {
           // Send PCM data to the WebSockets
-          websocket.send(event.data);
+          if (websocket.current.readyState === WebSocket.OPEN) {
+            websocket.current.send(event.data);
+          }
         }
       };
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const sourceNode = audioContext.current.createMediaStreamSource(stream);
       sourceNode.connect(workletNode);
@@ -84,18 +117,16 @@ const App = () => {
 
       workletNode.port.postMessage({ type: 'start' });
       setRecorder(workletNode);
+      setListening(true);
     } catch (error) {
       console.error('Audio Worklet Error:', error);
     }
   };
 
-  const onclickStop = () => {
-    setListening(false);
-    if (recorder) {
-      recorder.port.postMessage({ type: 'stop' });
-      audioContext.current.close();
-      setRecorder();
-    }
+  const onclickStop = async () => {
+    setLoading(true);
+    await websocket.current.close();
+    setLoading(false);
   };
 
   const gptHandler = (event) => {
@@ -178,11 +209,12 @@ const App = () => {
         <Grid2 className="mercury-transcription" size={{ xs: 12, md: 6 }}>
           <div className="mic-button">
             {listening ? (
-              <IconButton onClick={onclickStop}>
+              <IconButton loading={loading} onClick={onclickStop}>
                 <MicOffIcon />
               </IconButton>
             ) : (
               <IconButton
+                loading={loading}
                 disabled={!selectedLanguages.length}
                 onClick={onclickStart}
               >

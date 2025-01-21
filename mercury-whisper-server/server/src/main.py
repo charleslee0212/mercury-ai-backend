@@ -95,17 +95,20 @@ async def transcribe_v2(websocket: WebSocket):
         async for transcript in mercury_transcribe_v2(
             audio_stream=audio_stream, mercury_asr=mercury_asr
         ):
-            logger.debug(f"Sending transcription: {transcript.text}")
+            if not transcript:
+                break
+
             if websocket.client_state == WebSocketState.DISCONNECTED:
                 break
 
+            logger.debug(f"Sending transcription: {transcript.text}")
             await websocket.send_json(
                 MercuryTranscriptionJSON.from_transcription(transcript).model_dump()
             )
 
-    if websocket.client_state != WebSocketState.DISCONNECTED:
-        logger.info("Closing the connection.")
-        websocket.close()
+        if websocket.client_state != WebSocketState.DISCONNECTED:
+            logger.info("Closing the connection.")
+            await websocket.close()
 
 
 if __name__ == "__main__":

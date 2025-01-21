@@ -1,7 +1,7 @@
 from audio import Audio, AudioStream
 from mercury_asr import MercuryASR
 from core import Transcription, Word, common_prefix, to_full_sentences, word_to_text
-from config import CHUNK_DURATION, MAX_SENTENCES
+from config import CHUNK_DURATION, MAX_SENTENCES, SAMPLE_RATE, MAX_SILENCE
 from vad import is_speaking
 from collections.abc import AsyncGenerator
 import logging
@@ -99,12 +99,19 @@ async def mercury_transcribe_v2(
     buffer = Audio()
     confirmed = Transcription()
     spoken = False
+    silence_dur = 0
     processed = 0
 
     async for chunk in audio_stream.chunks(min_duration=CHUNK_DURATION):
         speaking = is_speaking(chunk)
         if not speaking:
             logger.debug("No speech detected.")
+            silence_dur += len(chunk) / SAMPLE_RATE
+            if silence_dur >= MAX_SILENCE:
+                logger.debug(
+                    "Reached max silence duration. Ending websocket connection..."
+                )
+                yield None
             if spoken:
                 buffer.extend(chunk)
                 transcription, _ = await mercury_asr.transcribe(audio=buffer)
@@ -128,6 +135,7 @@ async def mercury_transcribe_v2(
                 confirmed.replace([])
             continue
         spoken = True
+        silence_dur = 0
 
         buffer.extend(chunk)
 

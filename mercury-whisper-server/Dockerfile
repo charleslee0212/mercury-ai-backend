@@ -24,5 +24,11 @@ RUN python3.12 -m pip install --no-cache-dir -r requirements.txt
 COPY ./server ./server
 
 CMD ["python3.12", "server/src/main.py"]
-# Run container: docker run --gpus=all -p 8000:8000 -v ~/charl/Desktop/whisper-mercury-server/SSL:/whisper-mercury-server/SSL -v ~/charl/.cache/huggingface:/root/.cache/huggingface charleslee0212/mercury-server-test:dev
+# Run container: docker run --gpus=all -p 8000:8000 -v ~/charl/.cache/huggingface:/root/.cache/huggingface charleslee0212/mercury-server-test:dev
 # docker run --network host --gpus=all charleslee0212/mercury-server-test:dev
+
+# docker stop mercury \
+# docker pull charleslee0212/mercury-server-test:dev \
+# docker rm mercury \
+# docker image prune \
+# docker run --name mercury --network host --gpus=all charleslee0212/mercury-server-test:dev
