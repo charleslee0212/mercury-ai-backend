@@ -142,6 +142,7 @@ async def mercury_transcribe_v2(
         transcription, _ = await mercury_asr.transcribe(audio=buffer)
 
         full_sentences = number_of_fs(confirmed=transcription)
+        seconds = last_confirmed_fs(confirmed=transcription)
         if processed:
             logger.debug(
                 f"Merging transcription: {confirmed.text} <-> {transcription.text}"
@@ -159,7 +160,7 @@ async def mercury_transcribe_v2(
             yield confirmed
             logger.debug("Reseting buffer...")
             processed = 0
-            buffer.reset()
+            buffer.after(ts=seconds)
             confirmed.replace([])
             continue
 
