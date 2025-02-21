@@ -4,11 +4,13 @@ import TranslationCard from './translationCard';
 import mercuryTranslation from '../util/mercuryTranslation';
 
 const getTranslations = async ({ model, text, languages }) => {
-  const { completion } = await mercuryTranslation({
+  const x = await mercuryTranslation({
     model: model,
     transcription: text,
     languages: languages,
   });
+  console.log(x);
+  const completion = x.completion;
   const { translations } = JSON.parse(completion);
   return translations;
 };

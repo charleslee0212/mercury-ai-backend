@@ -64,21 +64,26 @@ const App = () => {
     };
     websocket.current.onclose = (event) => {
       console.log(event);
-      const Toast = Swal.mixin({
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true,
-        didOpen: (toast) => {
-          toast.onmouseenter = Swal.stopTimer;
-          toast.onmouseleave = Swal.resumeTimer;
-        },
-      });
-      Toast.fire({
-        icon: 'info',
-        title: 'Disconnected: Idle for too long!',
-      });
+      const { code } = event;
+
+      if (code === 1000) {
+        const Toast = Swal.mixin({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true,
+          didOpen: (toast) => {
+            toast.onmouseenter = Swal.stopTimer;
+            toast.onmouseleave = Swal.resumeTimer;
+          },
+        });
+        Toast.fire({
+          icon: 'info',
+          title: 'Disconnected: Idle for too long!',
+        });
+      }
+
       setListening(false);
       if (recorder) {
         recorder.port.postMessage({ type: 'stop' });
