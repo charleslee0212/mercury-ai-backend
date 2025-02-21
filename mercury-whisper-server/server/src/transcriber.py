@@ -142,7 +142,6 @@ async def mercury_transcribe_v2(
         transcription, _ = await mercury_asr.transcribe(audio=buffer)
 
         full_sentences = number_of_fs(confirmed=transcription)
-        seconds = last_confirmed_fs(confirmed=transcription)
         if processed:
             logger.debug(
                 f"Merging transcription: {confirmed.text} <-> {transcription.text}"
@@ -155,8 +154,14 @@ async def mercury_transcribe_v2(
             confirmed.replace(transcription.words)
 
         if full_sentences // MAX_SENTENCES > processed:
-            buffer = buffer.after(ts=seconds)
-            processed += 1
+            confirmed.set_final()
+            logger.debug(f"Finalized transcription: {confirmed.text}")
+            yield confirmed
+            logger.debug("Reseting buffer...")
+            processed = 0
+            buffer.reset()
+            confirmed.replace([])
+            continue
 
         confirmed.set_partial()
         logger.debug(f"Partial transcription: {confirmed.text}")
