@@ -54,6 +54,14 @@ def mercury_translator(request: MercuryTranslationRequestJSON):
             },
             {
                 "role": "user",
+                "content": ('{"transcription":"Hello 세상!","languages":["en","ko"]}'),
+            },
+            {
+                "role": "assistant",
+                "content": ('{"translations":{"en":"Hello World!","ko":"안녕 세상!"}}'),
+            },
+            {
+                "role": "user",
                 "content": json.dumps(
                     {
                         "transcription": request.transcription,

@@ -155,14 +155,8 @@ async def mercury_transcribe_v2(
             confirmed.replace(transcription.words)
 
         if full_sentences // MAX_SENTENCES > processed:
-            confirmed.set_final()
-            logger.debug(f"Finalized transcription: {confirmed.text}")
-            yield confirmed
-            logger.debug("Reseting buffer...")
-            processed = 0
-            buffer.after(ts=seconds)
-            confirmed.replace([])
-            continue
+            buffer = buffer.after(ts=seconds)
+            processed += 1
 
         confirmed.set_partial()
         logger.debug(f"Partial transcription: {confirmed.text}")
