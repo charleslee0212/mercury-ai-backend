@@ -110,12 +110,15 @@ class Transcription:
 
     def merge(self, words: list[Word]) -> None:
         if len(words):
-            overlap_start = words[0].start
-            print(f"Merge Start: {overlap_start}")
-            print(f"Self: {self.words}")
-            print(f"Incoming: {words}")
-            self.replace(words=self.before(overlap_start).words)
-            self.extend(words=words)
+            if words[0].start == self.words[0].start:
+                self.replace(words=words)
+            else:
+                overlap_start = words[0].start
+                print(f"Merge Start: {overlap_start}")
+                print(f"Self: {self.words}")
+                print(f"Incoming: {words}")
+                self.replace(words=self.before(overlap_start).words)
+                self.extend(words=words)
 
     def _ensure_no_word_overlap(self, words: list[Word]) -> None:
         if len(self.words) > 0 and len(words) > 0:

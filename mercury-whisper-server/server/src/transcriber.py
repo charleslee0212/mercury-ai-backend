@@ -100,15 +100,14 @@ async def mercury_transcribe_v2(
     confirmed = Transcription()
     spoken = False
     silence_dur = 0
-    processed = 0
 
     async for chunk in audio_stream.chunks(min_duration=CHUNK_DURATION):
         speaking = is_speaking(chunk)
         if not speaking:
-            logger.debug("No speech detected.")
+            logger.info("No speech detected.")
             silence_dur += len(chunk) / SAMPLE_RATE
             if silence_dur >= MAX_SILENCE:
-                logger.debug(
+                logger.info(
                     "Reached max silence duration. Ending websocket connection..."
                 )
                 yield None
@@ -116,21 +115,16 @@ async def mercury_transcribe_v2(
                 buffer.extend(chunk)
                 transcription, _ = await mercury_asr.transcribe(audio=buffer)
                 spoken = False
-                if processed:
-                    logger.debug(
-                        f"Merging transcription: {confirmed.text} <-> {transcription.text}"
-                    )
-                    confirmed.merge(transcription.words)
-                else:
-                    logger.debug(
-                        f"Replacing transcription: {confirmed.text} -> {transcription.text}"
-                    )
-                    confirmed.replace(transcription.words)
+
+                logger.debug(
+                    f"Merging transcription: {confirmed.text} <-> {transcription.text}"
+                )
+                confirmed.merge(transcription.words)
+
                 confirmed.set_final()
-                logger.debug(f"Finalized transcription: {confirmed.text}")
+                logger.info(f"Finalized transcription: {confirmed.text}")
                 yield confirmed
                 logger.debug("Reseting buffer...")
-                processed = 0
                 buffer.reset()
                 confirmed.replace([])
             continue
@@ -143,7 +137,8 @@ async def mercury_transcribe_v2(
 
         full_sentences = number_of_fs(confirmed=transcription)
         seconds = last_confirmed_fs(confirmed=transcription)
-        if processed:
+
+        if len(confirmed.words):
             logger.debug(
                 f"Merging transcription: {confirmed.text} <-> {transcription.text}"
             )
@@ -154,9 +149,15 @@ async def mercury_transcribe_v2(
             )
             confirmed.replace(transcription.words)
 
-        if full_sentences // MAX_SENTENCES > processed:
+        if full_sentences > MAX_SENTENCES:
+            logger.info("Reached max sentences.")
+            confirmed_max_sentence = confirmed.before(seconds=seconds)
+            confirmed_max_sentence.set_final()
+            logger.info(f"Finalized transcription: {confirmed_max_sentence.text}")
+            yield confirmed_max_sentence
             buffer = buffer.after(ts=seconds)
-            processed += 1
+            confirmed = confirmed.after(seconds=seconds)
+            continue
 
         confirmed.set_partial()
         logger.debug(f"Partial transcription: {confirmed.text}")
